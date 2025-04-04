@@ -1,7 +1,7 @@
 <?php
 
 // Database connection constants
-define('DB_HOST', 'h.filess.io');
+define('DB_HOST', '2r4fb.h.filess.io');
 define('DB_PORT', '61002');
 define('DB_NAME', 'musiclink_developill');
 define('DB_USER', 'musiclink_developill');
