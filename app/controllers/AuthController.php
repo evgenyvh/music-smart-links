@@ -1,0 +1,231 @@
+<?php
+
+require_once __DIR__ . '/../models/User.php';
+require_once __DIR__ . '/../services/EmailVerificationService.php';
+
+class AuthController {
+    private $userModel;
+    private $emailVerifier;
+    
+    public function __construct() {
+        $this->userModel = new User();
+        $this->emailVerifier = new EmailVerificationService();
+        
+        // Start session if not already started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    }
+    
+    /**
+     * Register a new user
+     * 
+     * @param array $data Registration data
+     * @return array Result with success status and message
+     */
+    public function register($data) {
+        // Validate required fields
+        if (empty($data['email']) || (empty($data['password']) && $data['auth_provider'] === 'email')) {
+            return [
+                'success' => false,
+                'message' => 'Email and password are required',
+            ];
+        }
+        
+        // Verify email format
+        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+            return [
+                'success' => false,
+                'message' => 'Invalid email format',
+            ];
+        }
+        
+        // Check if user already exists
+        $existingUser = $this->userModel->findByEmail($data['email']);
+        if ($existingUser) {
+            return [
+                'success' => false,
+                'message' => 'Email is already registered',
+            ];
+        }
+        
+        // Verify email with external service
+        $verificationResult = $this->emailVerifier->verifyEmail($data['email']);
+        
+        if (!$verificationResult['success']) {
+            return [
+                'success' => false,
+                'message' => $verificationResult['message'],
+            ];
+        }
+        
+        // Check if email is valid according to verification service
+        if (isset($verificationResult['data']['status']) && $verificationResult['data']['status'] !== 'valid') {
+            return [
+                'success' => false,
+                'message' => 'Email validation failed. Please use a valid email address.',
+            ];
+        }
+        
+        // Prepare user data
+        $userData = [
+            'email' => $data['email'],
+            'name' => $data['name'] ?? null,
+        ];
+        
+        $authProvider = $data['auth_provider'] ?? 'email';
+        $providerId = $data['provider_id'] ?? null;
+        $password = $data['password'] ?? null;
+        
+        // Create user
+        $userId = $this->userModel->create($userData, $authProvider, $providerId, $password);
+        
+        if (!$userId) {
+            return [
+                'success' => false,
+                'message' => 'Registration failed. Please try again.',
+            ];
+        }
+        
+        // Set session for new user
+        $_SESSION['user_id'] = $userId;
+        $_SESSION['user_email'] = $data['email'];
+        $_SESSION['user_name'] = $data['name'] ?? null;
+        
+        return [
+            'success' => true,
+            'message' => 'Registration successful',
+            'user_id' => $userId,
+        ];
+    }
+    
+    /**
+     * Log in a user
+     * 
+     * @param array $data Login data
+     * @return array Result with success status and message
+     */
+    public function login($data) {
+        // For email authentication
+        if (($data['auth_provider'] ?? 'email') === 'email') {
+            if (empty($data['email']) || empty($data['password'])) {
+                return [
+                    'success' => false,
+                    'message' => 'Email and password are required',
+                ];
+            }
+            
+            $user = $this->userModel->verifyPassword($data['email'], $data['password']);
+            
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid email or password',
+                ];
+            }
+        } 
+        // For OAuth providers (Google, Spotify)
+        else {
+            $provider = $data['auth_provider'];
+            $providerId = $data['provider_id'];
+            
+            if (empty($provider) || empty($providerId)) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid authentication data',
+                ];
+            }
+            
+            $user = $this->userModel->findByProviderId($provider, $providerId);
+            
+            // If user doesn't exist with this provider ID, but email exists
+            if (!$user && !empty($data['email'])) {
+                $user = $this->userModel->findByEmail($data['email']);
+                
+                // If email exists but with different auth method, link the accounts
+                if ($user) {
+                    // Update user's auth provider info (linking accounts)
+                    // This would need an additional method in the User model
+                }
+                // If user doesn't exist at all, register them
+                else {
+                    return $this->register($data);
+                }
+            }
+            
+            if (!$user) {
+                return [
+                    'success' => false,
+                    'message' => 'Authentication failed',
+                ];
+            }
+        }
+        
+        // Set session
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_email'] = $user['email'];
+        $_SESSION['user_name'] = $user['name'];
+        
+        return [
+            'success' => true,
+            'message' => 'Login successful',
+            'user_id' => $user['id'],
+        ];
+    }
+    
+    /**
+     * Log out the current user
+     * 
+     * @return array Result with success status and message
+     */
+    public function logout() {
+        // Clear session
+        $_SESSION = [];
+        
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(
+                session_name(),
+                '',
+                time() - 42000,
+                $params["path"],
+                $params["domain"],
+                $params["secure"],
+                $params["httponly"]
+            );
+        }
+        
+        session_destroy();
+        
+        return [
+            'success' => true,
+            'message' => 'Logout successful',
+        ];
+    }
+    
+    /**
+     * Check if user is logged in
+     * 
+     * @return bool True if logged in
+     */
+    public function isLoggedIn() {
+        return isset($_SESSION['user_id']);
+    }
+    
+    /**
+     * Get current user data
+     * 
+     * @return array|null User data or null if not logged in
+     */
+    public function getCurrentUser() {
+        if (!$this->isLoggedIn()) {
+            return null;
+        }
+        
+        return [
+            'id' => $_SESSION['user_id'],
+            'email' => $_SESSION['user_email'],
+            'name' => $_SESSION['user_name'],
+        ];
+    }
+}

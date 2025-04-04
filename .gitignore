@@ -1,0 +1,28 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment
+.env
+
+# Storage
+/storage/*.key
+/storage/logs/
+/storage/framework/
+
+# Cache
+*.cache
+.phpunit.result.cache
+
+# Logs
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE Files
+/.idea
+/.vscode
+*.sublime-project
+*.sublime-workspace
