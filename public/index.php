@@ -38,13 +38,6 @@ switch (true) {
     case $requestUri === '/' || $requestUri === '/index.php':
         require BASE_PATH . '/app/views/home.php';
         break;
-        
-    // Default - 404 page
-    default:
-        http_response_code(404);
-        require BASE_PATH . '/app/views/errors/404.php';
-        break;
-}
     
     // User routes
     case $requestUri === '/login' && $method === 'GET':
@@ -272,3 +265,10 @@ switch (true) {
                 break;
         }
         break;
+        
+    // Default - 404 page
+    default:
+        http_response_code(404);
+        require BASE_PATH . '/app/views/errors/404.php';
+        break;
+}
