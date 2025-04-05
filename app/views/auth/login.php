@@ -64,4 +64,4 @@ ob_start();
 
 <?php
 $content = ob_get_clean();
-include 'app/views/layout.php';
+include BASE_PATH . '/app/views/layout.php';
