@@ -16,167 +16,188 @@ $musicPlatforms = [
 ];
 ?>
 
-<div class="bg-white rounded-lg shadow-md p-6">
-    <div class="flex items-center mb-6">
-        <a href="/dashboard" class="text-indigo-600 hover:text-indigo-800 mr-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-        </a>
-        <h1 class="text-2xl font-bold">Create New Smart Link</h1>
+<div class="dashboard-container py-4">
+    <div class="mb-4">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create Smart Link</li>
+            </ol>
+        </nav>
     </div>
-    
-    <form action="/dashboard/create" method="POST" id="smartLinkForm" class="space-y-6">
-        <div x-data="{ loading: false, metadata: null, artworkUrl: null, title: '', artistName: '' }">
-            <div class="mb-4">
-                <label for="spotify_url" class="block text-gray-700 font-bold mb-2">Spotify Link *</label>
-                <div class="flex">
-                    <input type="url" id="spotify_url" name="spotify_url" required placeholder="https://open.spotify.com/track/..." 
-                        class="flex-1 px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        x-on:input="artworkUrl = null; title = ''; artistName = ''">
-                    <button type="button" 
-                        class="bg-indigo-600 text-white px-4 py-2 rounded-r-lg hover:bg-indigo-700 transition duration-300"
-                        x-on:click="
-                            loading = true;
-                            fetch('/api/extract-metadata', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                body: 'spotify_url=' + encodeURIComponent(document.getElementById('spotify_url').value)
-                            })
-                            .then(response => response.json())
-                            .then(data => {
-                                loading = false;
-                                if (data.success) {
-                                    metadata = data.data;
-                                    artworkUrl = metadata.artwork_url;
-                                    title = metadata.title;
-                                    artistName = metadata.artist_name;
-                                    document.getElementById('title').value = title;
-                                    document.getElementById('artist_name').value = artistName;
-                                    document.getElementById('artwork_url').value = artworkUrl;
-                                } else {
-                                    alert('Could not extract metadata. Please fill in the details manually.');
-                                }
-                            })
-                            .catch(error => {
-                                loading = false;
-                                console.error('Error:', error);
-                                alert('An error occurred. Please fill in the details manually.');
-                            })
-                        ">
-                        <template x-if="!loading">Extract Metadata</template>
-                        <template x-if="loading">
-                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </template>
-                    </button>
-                </div>
-                <p class="text-sm text-gray-600 mt-1">Enter a Spotify link to your track, album, or playlist.</p>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="md:col-span-2 space-y-4">
-                    <div>
-                        <label for="title" class="block text-gray-700 font-bold mb-2">Title *</label>
-                        <input type="text" id="title" name="title" required placeholder="My Awesome Track"
-                            x-model="title"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    
-                    <div>
-                        <label for="artist_name" class="block text-gray-700 font-bold mb-2">Artist Name</label>
-                        <input type="text" id="artist_name" name="artist_name" placeholder="Artist Name"
-                            x-model="artistName"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    </div>
-                    
-                    <div>
-                        <label for="artwork_url" class="block text-gray-700 font-bold mb-2">Artwork URL</label>
-                        <input type="url" id="artwork_url" name="artwork_url" placeholder="https://example.com/artwork.jpg"
-                            x-model="artworkUrl"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <p class="text-sm text-gray-600 mt-1">Leave empty to use artwork from Spotify (if available).</p>
-                    </div>
-                </div>
-                
-                <div>
-                    <label class="block text-gray-700 font-bold mb-2">Artwork Preview</label>
-                    <div class="border border-gray-300 rounded-lg w-full aspect-square flex items-center justify-center overflow-hidden">
-                        <template x-if="artworkUrl">
-                            <img :src="artworkUrl" alt="Artwork preview" class="w-full h-full object-cover">
-                        </template>
-                        <template x-if="!artworkUrl">
-                            <div class="text-gray-400 text-center p-4">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <p>No artwork</p>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h1 class="h4 mb-0">Create New Smart Link</h1>
         </div>
-        
-        <div class="border-t border-gray-200 pt-6">
-            <h2 class="text-xl font-bold mb-4">Music Platform Links</h2>
-            
-            <div x-data="{ platforms: [] }" class="space-y-4">
-                <template x-for="(platform, index) in platforms" :key="index">
-                    <div class="flex space-x-4">
-                        <div class="w-1/3">
-                            <select :name="'platform[' + index + ']'" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                <option value="">Select Platform</option>
-                                <?php foreach ($musicPlatforms as $platform): ?>
-                                    <option value="<?= $platform['id'] ?>"><?= htmlspecialchars($platform['name']) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="flex-1">
-                            <input type="url" :name="'platform_url[' + index + ']'" placeholder="https://..." 
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        </div>
-                        
-                        <div>
-                            <button type="button" @click="platforms.splice(index, 1)" 
-                                class="bg-red-100 text-red-600 p-2 rounded-lg hover:bg-red-200 transition duration-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
+        <div class="card-body p-4">
+            <form action="/dashboard/create" method="POST" id="smartLinkForm">
+                <div x-data="{ 
+                    loading: false, 
+                    metadata: null, 
+                    artworkUrl: '', 
+                    title: '', 
+                    artistName: '',
+                    platforms: []
+                }">
+                    <!-- Step 1: Enter Spotify URL -->
+                    <h2 class="h5 mb-3">Step 1: Enter Spotify URL</h2>
+                    <div class="mb-4">
+                        <label for="spotify_url" class="form-label">Spotify Link <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="url" id="spotify_url" name="spotify_url" required 
+                                   class="form-control" 
+                                   placeholder="https://open.spotify.com/track/..." 
+                                   x-on:input="artworkUrl = ''; title = ''; artistName = ''">
+                            <button type="button" 
+                                    class="btn btn-primary"
+                                    x-on:click="
+                                        loading = true;
+                                        fetch('/api/extract-metadata', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                                            body: 'spotify_url=' + encodeURIComponent(document.getElementById('spotify_url').value)
+                                        })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            loading = false;
+                                            if (data.success) {
+                                                metadata = data.data;
+                                                artworkUrl = metadata.artwork_url;
+                                                title = metadata.title;
+                                                artistName = metadata.artist_name;
+                                                document.getElementById('title').value = title;
+                                                document.getElementById('artist_name').value = artistName;
+                                                document.getElementById('artwork_url').value = artworkUrl;
+                                            } else {
+                                                alert('Could not extract metadata. Please fill in the details manually.');
+                                            }
+                                        })
+                                        .catch(error => {
+                                            loading = false;
+                                            console.error('Error:', error);
+                                            alert('An error occurred. Please fill in the details manually.');
+                                        })
+                                    ">
+                                <span x-show="!loading">Extract Metadata</span>
+                                <span x-show="loading">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    <span class="visually-hidden">Loading...</span>
+                                </span>
                             </button>
                         </div>
+                        <div class="form-text">Enter a Spotify link to your track, album, or playlist.</div>
                     </div>
-                </template>
-                
-                <button type="button" @click="platforms.push({})" 
-                    class="flex items-center text-indigo-600 hover:text-indigo-800 transition duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Add Platform Link
-                </button>
-            </div>
-            
-            <div class="mt-6 text-gray-600">
-                <p>Don't see a platform you need? <a href="#" class="text-indigo-600 hover:underline">Request a new platform</a></p>
-            </div>
+                    
+                    <!-- Step 2: Basic Information -->
+                    <h2 class="h5 mb-3">Step 2: Basic Information</h2>
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title <span class="text-danger">*</span></label>
+                                <input type="text" id="title" name="title" required 
+                                       class="form-control"
+                                       placeholder="My Awesome Track"
+                                       x-model="title">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="artist_name" class="form-label">Artist Name</label>
+                                <input type="text" id="artist_name" name="artist_name" 
+                                       class="form-control"
+                                       placeholder="Artist Name"
+                                       x-model="artistName">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="artwork_url" class="form-label">Artwork URL</label>
+                                <input type="url" id="artwork_url" name="artwork_url" 
+                                       class="form-control"
+                                       placeholder="https://example.com/artwork.jpg"
+                                       x-model="artworkUrl">
+                                <div class="form-text">Leave empty to use artwork from Spotify (if available).</div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Artwork Preview</label>
+                            <div class="border rounded p-2 d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa;">
+                                <template x-if="artworkUrl">
+                                    <img :src="artworkUrl" alt="Artwork preview" class="img-fluid" style="max-height: 180px; max-width: 100%;">
+                                </template>
+                                <template x-if="!artworkUrl">
+                                    <div class="text-center text-muted">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-image mb-2" viewBox="0 0 16 16">
+                                            <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                                            <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                                        </svg>
+                                        <p>No artwork</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Platform Links -->
+                    <h2 class="h5 mb-3">Step 3: Add Music Platform Links</h2>
+                    <div class="mb-4">
+                        <template x-for="(platform, index) in platforms" :key="index">
+                            <div class="row mb-3 align-items-center">
+                                <div class="col-md-5">
+                                    <select :name="'platform[' + index + ']'" class="form-select">
+                                        <option value="">Select Platform</option>
+                                        <?php foreach ($musicPlatforms as $platform): ?>
+                                            <option value="<?= $platform['id'] ?>"><?= htmlspecialchars($platform['name']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <input type="url" :name="'platform_url[' + index + ']'" class="form-control" placeholder="https://...">
+                                </div>
+                                
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-outline-danger" @click="platforms.splice(index, 1)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                                            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                        
+                        <button type="button" class="btn btn-outline-primary" @click="platforms.push({})">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-2" viewBox="0 0 16 16">
+                                <path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 0 1 0-2h6V1a1 1 0 0 1 1-1z"/>
+                            </svg>
+                            Add Platform Link
+                        </button>
+                        
+                        <div class="mt-3 text-muted">
+                            <small>Don't see a platform you need? <a href="#" class="text-decoration-none">Request a new platform</a></small>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="border-top pt-4 mt-4 d-flex justify-content-between">
+                        <a href="/dashboard" class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-lg me-2" viewBox="0 0 16 16">
+                                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
+                            </svg>
+                            Create Smart Link
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
-        
-        <div class="border-t border-gray-200 pt-6 flex justify-between">
-            <a href="/dashboard" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition duration-300">
-                Cancel
-            </a>
-            
-            <button type="submit" class="bg-indigo-600 text-white font-bold px-6 py-2 rounded-lg hover:bg-indigo-700 transition duration-300">
-                Create Smart Link
-            </button>
-        </div>
-    </form>
+    </div>
 </div>
 
 <?php
 $content = ob_get_clean();
 include BASE_PATH . '/app/views/layout.php';
+?>
