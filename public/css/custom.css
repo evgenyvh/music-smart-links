@@ -1,0 +1,269 @@
+/* Custom styles for JAE Smartlink */
+
+/* Override primary colors */
+:root {
+    --bs-primary: #ff4747;
+    --bs-primary-rgb: 255, 71, 71;
+    --bs-primary-hover: #e63c3c;
+  }
+  
+  .btn-primary {
+    background-color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+  }
+  
+  .btn-primary:hover, 
+  .btn-primary:focus, 
+  .btn-primary:active {
+    background-color: var(--bs-primary-hover) !important;
+    border-color: var(--bs-primary-hover) !important;
+  }
+  
+  .btn-outline-primary {
+    color: var(--bs-primary) !important;
+    border-color: var(--bs-primary) !important;
+  }
+  
+  .btn-outline-primary:hover {
+    background-color: var(--bs-primary) !important;
+    color: #fff !important;
+  }
+  
+  .text-primary {
+    color: var(--bs-primary) !important;
+  }
+  
+  .border-primary {
+    border-color: var(--bs-primary) !important;
+  }
+  
+  .bg-primary {
+    background-color: var(--bs-primary) !important;
+  }
+  
+  /* Header/Navbar styles */
+  .navbar {
+    padding: 15px 0;
+    background-color: #1a1a2e !important;
+  }
+  
+  .navbar-brand {
+    font-weight: 700;
+    color: #fff !important;
+  }
+  
+  .navbar .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: 500;
+  }
+  
+  .navbar .nav-link:hover {
+    color: #fff !important;
+  }
+  
+  .navbar .btn-primary {
+    padding: 0.5rem 1.5rem;
+  }
+  
+  /* Hero section */
+  .hero {
+    background-color: #1a1a2e !important;
+    padding: 80px 0 60px;
+  }
+  
+  .display-text {
+    font-weight: 800;
+    font-size: 3rem;
+    line-height: 1.2;
+  }
+  
+  @media (max-width: 768px) {
+    .display-text {
+      font-size: 2.2rem;
+    }
+  }
+  
+  /* Feature cards */
+  .feature-card {
+    padding: 30px;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+  }
+  
+  .feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+  
+  .feature-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 71, 71, 0.1);
+    border-radius: 50%;
+    color: var(--bs-primary);
+  }
+  
+  .feature-icon svg {
+    width: 30px;
+    height: 30px;
+  }
+  
+  /* Icons replacing images */
+  .platform-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px;
+    margin-bottom: 10px;
+  }
+  
+  /* Fix for Coming Soon badges */
+  .position-absolute.badge {
+    z-index: 5;
+  }
+  
+  /* Footer styling */
+  .footer {
+    background-color: #1a1a2e;
+    color: #fff;
+    padding: 50px 0 20px;
+  }
+  
+  .footer-links h4 {
+    color: #fff;
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+  }
+  
+  .footer-links ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .footer-links li {
+    margin-bottom: 10px;
+  }
+  
+  .footer-links a {
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+  
+  .footer-links a:hover {
+    color: #fff;
+  }
+  
+  .footer-bottom {
+    padding-top: 30px;
+    margin-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  /* Smart link style */
+  .music-link-page {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.8);
+    background-blend-mode: overlay;
+    padding: 2rem;
+  }
+  
+  .music-link-container {
+    max-width: 480px;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+  }
+  
+  .platform-button {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: #333;
+    background-color: #f8f9fa;
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+  }
+  
+  .platform-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+  }
+  
+  /* Dashboard improvements */
+  .dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+  
+  /* Global animations */
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-in;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Adding available/coming soon styles */
+  .feature-card.border-primary {
+    border: 2px solid var(--bs-primary) !important;
+  }
+  
+  .bg-warning {
+    background-color: #ffc107 !important;
+  }
+  
+  .bg-success {
+    background-color: #28a745 !important;
+  }
+  
+  /* Fix missing images by using SVG icons directly */
+  .platform-logos svg {
+    margin: 0 15px;
+  }
+  
+  /* Mobile responsiveness fixes */
+  @media (max-width: 767px) {
+    .display-text {
+      font-size: 1.8rem;
+    }
+    
+    .hero {
+      padding: 40px 0;
+    }
+    
+    .platform-logos .row {
+      justify-content: center;
+    }
+    
+    .feature-card {
+      padding: 20px;
+    }
+  }
