@@ -5,77 +5,152 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?? 'Music Smart Links' ?></title>
     
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     
-    <!-- Alpine.js CDN -->
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/styles.css">
+    
+    <!-- Alpine.js -->
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js" defer></script>
-    
-    <!-- Custom styles -->
-    <style>
-        .loading-animation {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-    </style>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body>
     <!-- Navigation -->
-    <nav class="bg-indigo-600 text-white shadow-md">
-        <div class="container mx-auto px-4 py-3">
-            <div class="flex justify-between items-center">
-                <a href="/" class="text-xl font-bold">Music Smart Links</a>
-                
-                <div class="flex space-x-4">
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="/">Music Smart Links</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/#pricing">Pricing</a>
+                    </li>
                     <?php if (isset($authController) && $authController->isLoggedIn()): ?>
-                        <a href="/dashboard" class="hover:text-indigo-200">Dashboard</a>
-                        <a href="/logout" class="hover:text-indigo-200">Logout</a>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">Logout</a>
+                        </li>
                     <?php else: ?>
-                        <a href="/login" class="hover:text-indigo-200">Login</a>
-                        <a href="/register" class="hover:text-indigo-200">Register</a>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary ms-3" href="/register">Get Started</a>
+                        </li>
                     <?php endif; ?>
-                </div>
+                </ul>
             </div>
         </div>
     </nav>
     
-    <!-- Content -->
-    <main class="container mx-auto px-4 py-8">
+    <!-- Main Content -->
+    <main>
         <?php if (isset($_SESSION['success'])): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                <?= $_SESSION['success'] ?>
-                <?php unset($_SESSION['success']); ?>
+            <div class="container mt-4">
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <?= $_SESSION['success'] ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             </div>
+            <?php unset($_SESSION['success']); ?>
         <?php endif; ?>
         
         <?php if (isset($_SESSION['error'])): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                <?= $_SESSION['error'] ?>
-                <?php unset($_SESSION['error']); ?>
+            <div class="container mt-4">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= $_SESSION['error'] ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
             </div>
+            <?php unset($_SESSION['error']); ?>
         <?php endif; ?>
         
-        <?php include $content; ?>
+        <?php 
+        // Include the content
+        if (isset($content)) {
+            if (is_file($content)) {
+                include $content;
+            } else {
+                echo $content;
+            }
+        }
+        ?>
     </main>
     
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-6">
-        <div class="container mx-auto px-4">
-            <div class="flex flex-col md:flex-row justify-between items-center">
-                <div class="mb-4 md:mb-0">
-                    <p>&copy; <?= date('Y') ?> Music Smart Links</p>
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4 mb-lg-0">
+                    <div class="footer-logo">Music Smart Links</div>
+                    <p>The modern way for artists to promote their music across all platforms with just one link.</p>
                 </div>
-                <div class="flex space-x-4">
-                    <a href="/about" class="hover:text-indigo-300">About</a>
-                    <a href="/privacy" class="hover:text-indigo-300">Privacy Policy</a>
-                    <a href="/terms" class="hover:text-indigo-300">Terms of Service</a>
+                
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <div class="footer-links">
+                        <h4>Solutions</h4>
+                        <ul>
+                            <li><a href="#">Artist Bio Links</a></li>
+                            <li><a href="#">Pre-Release Links</a></li>
+                            <li><a href="#">Release Links</a></li>
+                            <li><a href="#">Tour and Event Links</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                    <div class="footer-links">
+                        <h4>Company</h4>
+                        <ul>
+                            <li><a href="#">About</a></li>
+                            <li><a href="#">Careers</a></li>
+                            <li><a href="#">Blog</a></li>
+                            <li><a href="#">Help Center</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-4">
+                    <div class="footer-links">
+                        <h4>Stay Connected</h4>
+                        <p>Subscribe to our newsletter for updates and tips.</p>
+                        <form action="#" method="POST" class="mt-3">
+                            <div class="input-group mb-3">
+                                <input type="email" class="form-control" placeholder="Your email" aria-label="Your email">
+                                <button class="btn btn-primary" type="submit">Subscribe</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom text-center">
+                <div class="row">
+                    <div class="col-md-6 text-md-start">
+                        <p>&copy; <?= date('Y') ?> Music Smart Links. All rights reserved.</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a href="/terms" class="me-3">Terms of Service</a>
+                        <a href="/privacy" class="me-3">Privacy Policy</a>
+                    </div>
                 </div>
             </div>
         </div>
     </footer>
+    
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
