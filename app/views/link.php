@@ -31,7 +31,7 @@
     <meta property="og:type" content="music">
 
 </head>
-<body class="loading-animation">
+<body>
     <?php
     // Set background with artwork if available
     if (!empty($smartLink['artwork_url'])) {
@@ -125,8 +125,12 @@
     </main>
     
     <script>
-        // Simple loading animation effect
+        // Ensure the page loads properly
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM fully loaded');
+            
+            // Remove any loading classes that might be preventing content from showing
+            document.body.classList.remove('loading-animation');
             document.body.classList.add('loaded');
             
             // Add play button functionality
@@ -142,6 +146,13 @@
                 });
             }
         });
+
+        // Fallback in case DOMContentLoaded doesn't trigger properly
+        window.onload = function() {
+            console.log('Window fully loaded');
+            document.body.classList.remove('loading-animation');
+            document.body.classList.add('loaded');
+        };
     </script>
 </body>
 </html>
