@@ -167,10 +167,10 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6 mb-4 mb-lg-0">
-                <div class="position-relative">
-                    <span class="badge bg-warning text-dark position-absolute start-0 top-0">Coming Soon</span>
+                <div class="coming-soon-container">
+                    <span class="badge bg-warning text-dark">Coming Soon</span>
+                    <h2>Your fans are your most valuable asset</h2>
                 </div>
-                <h2 class="mb-4">Your fans are your most valuable asset</h2>
                 <p class="lead mb-4">Fan Base Management</p>
                 <p class="mb-4">Know who your fans are and contact them directly with dozens of ways to collect, organize and sync fan contact info.</p>
                 <a href="/register" class="btn btn-primary">Deepen fan relationships</a>
@@ -194,10 +194,10 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6 order-lg-2 mb-4 mb-lg-0">
-                <div class="position-relative">
-                    <span class="badge bg-warning text-dark position-absolute end-0 top-0">Coming Soon</span>
+                <div class="coming-soon-container">
+                    <span class="badge bg-warning text-dark">Coming Soon</span>
+                    <h2>Know what works and use it to grow</h2>
                 </div>
-                <h2 class="mb-4">Know what works and use it to grow</h2>
                 <p class="lead mb-4">Analytics and Insights</p>
                 <p class="mb-4">Track fan behaviors across your links, get artist level insights and send it all to your ad retargeting platforms.</p>
                 <a href="/register" class="btn btn-primary">Grow with fan insights</a>
