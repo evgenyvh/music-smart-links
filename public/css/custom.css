@@ -7,6 +7,27 @@
     --bs-primary-hover: #e63c3c;
   }
   
+  /* Fix for SVG path data appearing as text */
+  .icon-wrap {
+    display: inline-block;
+    line-height: 0;
+  }
+  
+  svg {
+    display: block;
+  }
+  
+  svg path {
+    display: none;
+  }
+  
+  /* Fix for Coming Soon badges */
+  .coming-soon-container .badge {
+    display: inline-block !important;
+    position: static !important;
+    margin-bottom: 10px;
+  }
+  
   .btn-primary {
     background-color: var(--bs-primary) !important;
     border-color: var(--bs-primary) !important;
