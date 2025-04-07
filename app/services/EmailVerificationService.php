@@ -119,6 +119,17 @@ class EmailVerificationService {
             ];
         }
         
+        // Check for risky email statuses
+        if (isset($responseData['status']) && in_array($responseData['status'], [
+            'invalid', 'disabled', 'disposable', 'inbox_full', 'catch_all', 'role_account', 'spamtrap'
+        ])) {
+            return [
+                'success' => false,
+                'message' => 'Email verification failed. This email appears to be ' . $responseData['status'] . '.',
+                'data' => $responseData
+            ];
+        }
+        
         // Return standardized format
         return [
             'success' => true,

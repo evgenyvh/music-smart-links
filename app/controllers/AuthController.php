@@ -59,11 +59,11 @@ class AuthController {
             ];
         }
         
-        // Check if email is valid according to verification service
-        if (isset($verificationResult['data']['status']) && $verificationResult['data']['status'] !== 'valid') {
+        // Check if email has a score above 95
+        if (isset($verificationResult['data']['overall_score']) && $verificationResult['data']['overall_score'] < 95) {
             return [
                 'success' => false,
-                'message' => 'Email validation failed. Please use a valid email address.',
+                'message' => 'Email verification failed. Please use a more reliable email address.',
             ];
         }
         
@@ -76,6 +76,24 @@ class AuthController {
         $authProvider = $data['auth_provider'] ?? 'email';
         $providerId = $data['provider_id'] ?? null;
         $password = $data['password'] ?? null;
+        
+        // Validate password if using email auth
+        if ($authProvider === 'email' && !empty($password)) {
+            if (strlen($password) < 8) {
+                return [
+                    'success' => false,
+                    'message' => 'Password must be at least 8 characters long',
+                ];
+            }
+            
+            // Check for password confirmation if provided
+            if (isset($data['password_confirm']) && $password !== $data['password_confirm']) {
+                return [
+                    'success' => false,
+                    'message' => 'Passwords do not match',
+                ];
+            }
+        }
         
         // Create user
         $userId = $this->userModel->create($userData, $authProvider, $providerId, $password);
