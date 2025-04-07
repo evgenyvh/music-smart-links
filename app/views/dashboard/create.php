@@ -32,20 +32,20 @@ $musicPlatforms = [
         </div>
         <div class="card-body p-4">
             <form action="/dashboard/create" method="POST" id="smartLinkForm">
-                <div x-data="{ 
-                    loading: false, 
+                <div x-data="{
+                    loading: false,
                     fetchingLinks: false,
-                    metadata: null, 
-                    artworkUrl: '', 
-                    title: '', 
+                    metadata: null,
+                    artworkUrl: '',
+                    title: '',
                     artistName: '',
                     platforms: [],
                     platformsMap: <?= json_encode(array_reduce($musicPlatforms, function($result, $item) {
                         $result[$item['id']] = $item;
                         return $result;
                     }, [])) ?>,
+
                     addPlatform(platformId, platformUrl) {
-                        // Check if platform already exists
                         const exists = this.platforms.some(p => p.platformId === platformId);
                         if (!exists) {
                             this.platforms.push({
@@ -54,9 +54,11 @@ $musicPlatforms = [
                             });
                         }
                     },
+
                     removePlatform(index) {
                         this.platforms.splice(index, 1);
                     },
+
                     autoFetchLinks() {
                         const spotifyUrl = document.getElementById('spotify_url').value;
                         if (!spotifyUrl) {
@@ -66,7 +68,6 @@ $musicPlatforms = [
 
                         this.fetchingLinks = true;
 
-                        // Call API to find matching links
                         fetch('/api.php?endpoint=find-matching-links', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -79,7 +80,7 @@ $musicPlatforms = [
                             if (data.success && data.links && data.links.length > 0) {
                                 // Add Spotify as the first platform
                                 this.platforms = [{
-                                    platformId: 1, // Spotify ID
+                                    platformId: 1,
                                     platformUrl: spotifyUrl
                                 }];
 
@@ -88,14 +89,12 @@ $musicPlatforms = [
                                     this.addPlatform(link.platform_id, link.platform_url);
                                 });
 
-                                // Show success message
                                 alert(`Found ${data.links.length} matching links on other platforms!`);
                             } else {
                                 alert('No matching links found on other platforms. Please add them manually.');
-                                // Initialize with empty platform
                                 if (this.platforms.length === 0) {
                                     this.platforms = [{
-                                        platformId: 1, // Spotify ID
+                                        platformId: 1,
                                         platformUrl: spotifyUrl
                                     }];
                                 }
@@ -106,10 +105,9 @@ $musicPlatforms = [
                             console.error('Error:', error);
                             alert('An error occurred while searching for matching links. Please add them manually.');
 
-                            // Initialize with empty platform
                             if (this.platforms.length === 0) {
                                 this.platforms = [{
-                                    platformId: 1, // Spotify ID
+                                    platformId: 1,
                                     platformUrl: spotifyUrl
                                 }];
                             }
@@ -164,6 +162,19 @@ $musicPlatforms = [
                                     <span class="visually-hidden">Loading...</span>
                                 </span>
                             </button>
+                        </div>
+                        <div class="mt-2">
+                            <button type="button" 
+                                    class="btn btn-outline-primary btn-sm"
+                                    x-on:click="autoFetchLinks()"
+                                    x-bind:disabled="loading || fetchingLinks">
+                                <span x-show="!fetchingLinks">Auto-find links on other platforms</span>
+                                <span x-show="fetchingLinks">
+                                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                    Searching for links...
+                                </span>
+                            </button>
+                            <small class="form-text">Automatically search for this track on other music platforms</small>
                         </div>
                         <div class="form-text">Enter a Spotify link to your track, album, or playlist.</div>
                     </div>
