@@ -88,7 +88,7 @@ $musicPlatforms = [
                         </div>
                         <div class="form-text">Enter a Spotify link to your track, album, or playlist.</div>
                     </div>
-                    
+
                     <!-- Step 2: Basic Information -->
                     <h2 class="h5 mb-3">Step 2: Basic Information</h2>
                     <div class="row mb-4">
@@ -100,7 +100,7 @@ $musicPlatforms = [
                                        placeholder="My Awesome Track"
                                        x-model="title">
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="artist_name" class="form-label">Artist Name</label>
                                 <input type="text" id="artist_name" name="artist_name" 
@@ -108,7 +108,7 @@ $musicPlatforms = [
                                        placeholder="Artist Name"
                                        x-model="artistName">
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="artwork_url" class="form-label">Artwork URL</label>
                                 <input type="url" id="artwork_url" name="artwork_url" 
@@ -118,7 +118,7 @@ $musicPlatforms = [
                                 <div class="form-text">Leave empty to use artwork from Spotify (if available).</div>
                             </div>
                         </div>
-                        
+
                         <div class="col-md-4">
                             <label class="form-label">Artwork Preview</label>
                             <div class="border rounded p-2 d-flex align-items-center justify-content-center" style="height: 200px; background-color: #f8f9fa;">
@@ -137,7 +137,7 @@ $musicPlatforms = [
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Step 3: Platform Links -->
                     <h2 class="h5 mb-3">Step 3: Add Music Platform Links</h2>
                     <div class="mb-4">
@@ -151,11 +151,11 @@ $musicPlatforms = [
                                         <?php endforeach; ?>
                                     </select>
                                 </div>
-                                
+
                                 <div class="col-md-6">
                                     <input type="url" :name="'platform_url[' + index + ']'" class="form-control" placeholder="https://...">
                                 </div>
-                                
+
                                 <div class="col-md-1">
                                     <button type="button" class="btn btn-outline-danger" @click="platforms.splice(index, 1)">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
@@ -165,25 +165,25 @@ $musicPlatforms = [
                                 </div>
                             </div>
                         </template>
-                        
+
                         <button type="button" class="btn btn-outline-primary" @click="platforms.push({})">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-2" viewBox="0 0 16 16">
                                 <path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 0 1 0-2h6V1a1 1 0 0 1 1-1z"/>
                             </svg>
                             Add Platform Link
                         </button>
-                        
+
                         <div class="mt-3 text-muted">
                             <small>Don't see a platform you need? <a href="#" class="text-decoration-none">Request a new platform</a></small>
                         </div>
                     </div>
-                    
+
                     <!-- Form Actions -->
                     <div class="border-top pt-4 mt-4 d-flex justify-content-between">
                         <a href="/dashboard" class="btn btn-outline-secondary">
                             Cancel
                         </a>
-                        
+
                         <button type="submit" class="btn btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-lg me-2" viewBox="0 0 16 16">
                                 <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
@@ -201,3 +201,55 @@ $musicPlatforms = [
 $content = ob_get_clean();
 include BASE_PATH . '/app/views/layout.php';
 ?>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('smartLinkForm');
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Prevent default submission
+            e.preventDefault();
+
+            // Validate form
+            let isValid = true;
+            const spotifyUrl = document.getElementById('spotify_url').value;
+            const title = document.getElementById('title').value;
+
+            if (!spotifyUrl) {
+                alert('Spotify URL is required');
+                isValid = false;
+            }
+
+            if (!title) {
+                alert('Title is required');
+                isValid = false;
+            }
+
+            // Check if at least one platform link is added
+            const platforms = document.querySelectorAll('select[name^="platform["]');
+            const platformUrls = document.querySelectorAll('input[name^="platform_url["]');
+
+            let hasPlatformLinks = false;
+            for (let i = 0; i < platforms.length; i++) {
+                if (platforms[i].value && platformUrls[i].value) {
+                    hasPlatformLinks = true;
+                    break;
+                }
+            }
+
+            if (!hasPlatformLinks) {
+                // Just log a warning, don't block submission
+                console.warn('No platform links added');
+            }
+
+            if (isValid) {
+                // Log form data for debugging
+                console.log('Submitting form with data:', new FormData(form));
+
+                // Submit the form
+                form.submit();
+            }
+        });
+    }
+});
+</script>

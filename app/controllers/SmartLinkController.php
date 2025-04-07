@@ -35,84 +35,111 @@ class SmartLinkController {
                 'message' => 'You must be logged in to create a smart link',
             ];
         }
-        
+
         $currentUser = $this->authController->getCurrentUser();
         $userId = $currentUser['id'];
-        
+
+        // Debug: Log the incoming data
+        error_log('Create Smart Link - Received data: ' . json_encode($data));
         // Check if user has reached their limit (free tier = 3 links)
         $config = require __DIR__ . '/../../config/app.php';
         $userLinkCount = $this->userModel->countSmartLinks($userId);
-        
+
         if ($userLinkCount >= $config['free_tier']['max_links']) {
             return [
                 'success' => false,
                 'message' => 'You have reached your limit of ' . $config['free_tier']['max_links'] . ' smart links. Upgrade to create more.',
             ];
         }
-        
+
         // Validate required fields
+        if (empty($data['title'])) {
+            return [
+                'success' => false,
+                'message' => 'Title is required',
+            ];
+        }
         if (empty($data['spotify_url'])) {
             return [
                 'success' => false,
                 'message' => 'Spotify URL is required',
             ];
         }
-        
-        // Extract metadata from Spotify URL if possible
-        $metadata = $this->spotifyService->extractMetadata($data['spotify_url']);
-        
-        if ($metadata) {
-            // Use extracted metadata if available
-            $linkData = [
-                'title' => $data['title'] ?? $metadata['title'],
-                'spotify_url' => $data['spotify_url'],
-                'artwork_url' => $metadata['artwork_url'],
-                'artist_name' => $metadata['artist_name'],
-                'track_name' => $metadata['track_name'],
+
+        try {
+            // Extract metadata from Spotify URL if possible
+            $metadata = null;
+            if (!empty($data['spotify_url'])) {
+                $metadata = $this->spotifyService->extractMetadata($data['spotify_url']);
+                error_log('Spotify metadata: ' . ($metadata ? json_encode($metadata) : 'None extracted'));
+            }
+
+            if ($metadata) {
+                // Use extracted metadata if available
+                $linkData = [
+                    'title' => $data['title'] ?? $metadata['title'],
+                    'spotify_url' => $data['spotify_url'],
+                    'artwork_url' => !empty($data['artwork_url']) ? $data['artwork_url'] : $metadata['artwork_url'],
+                    'artist_name' => !empty($data['artist_name']) ? $data['artist_name'] : $metadata['artist_name'],
+                    'track_name' => !empty($data['track_name']) ? $data['track_name'] : $metadata['track_name'],
+                ];
+            } else {
+                // Use provided data without metadata
+                $linkData = [
+                    'title' => $data['title'] ?? 'My Smart Link',
+                    'spotify_url' => $data['spotify_url'],
+                    'artwork_url' => $data['artwork_url'] ?? null,
+                    'artist_name' => $data['artist_name'] ?? null,
+                    'track_name' => $data['track_name'] ?? null,
+                ];
+            }
+
+            error_log('Creating smart link with data: ' . json_encode($linkData));
+
+            // Create the smart link
+            $smartLinkId = $this->smartLinkModel->create($userId, $linkData);
+
+            if (!$smartLinkId) {
+                error_log('Failed to create smart link');
+                return [
+                    'success' => false,
+                    'message' => 'Failed to create smart link. Please try again.',
+                ];
+            }
+
+            error_log('Smart link created with ID: ' . $smartLinkId);
+
+            // Add platform links if provided
+            if (!empty($data['platform_links']) && is_array($data['platform_links'])) {
+                foreach ($data['platform_links'] as $platformLink) {
+                    if (!empty($platformLink['platform_id']) && !empty($platformLink['platform_url'])) {
+                        $this->smartLinkModel->addPlatformLink(
+                            $smartLinkId,
+                            $platformLink['platform_id'],
+                            $platformLink['platform_url']
+                        );
+                    }
+                }
+            } else {
+                error_log('No platform links provided or invalid format');
+            }
+
+            // Get the created smart link with slug
+            $smartLink = $this->smartLinkModel->findById($smartLinkId);
+
+            return [
+                'success' => true,
+                'message' => 'Smart link created successfully',
+                'smart_link_id' => $smartLinkId,
+                'slug' => $smartLink['slug'],
             ];
-        } else {
-            // Use provided data without metadata
-            $linkData = [
-                'title' => $data['title'] ?? 'My Smart Link',
-                'spotify_url' => $data['spotify_url'],
-                'artwork_url' => $data['artwork_url'] ?? null,
-                'artist_name' => $data['artist_name'] ?? null,
-                'track_name' => $data['track_name'] ?? null,
-            ];
-        }
-        
-        // Create the smart link
-        $smartLinkId = $this->smartLinkModel->create($userId, $linkData);
-        
-        if (!$smartLinkId) {
+        } catch (Exception $e) {
+            error_log('Exception in createSmartLink: ' . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'Failed to create smart link. Please try again.',
+                'message' => 'An error occurred: ' . $e->getMessage(),
             ];
         }
-        
-        // Add platform links if provided
-        if (!empty($data['platform_links']) && is_array($data['platform_links'])) {
-            foreach ($data['platform_links'] as $platformLink) {
-                if (!empty($platformLink['platform_id']) && !empty($platformLink['platform_url'])) {
-                    $this->smartLinkModel->addPlatformLink(
-                        $smartLinkId,
-                        $platformLink['platform_id'],
-                        $platformLink['platform_url']
-                    );
-                }
-            }
-        }
-        
-        // Get the created smart link with slug
-        $smartLink = $this->smartLinkModel->findById($smartLinkId);
-        
-        return [
-            'success' => true,
-            'message' => 'Smart link created successfully',
-            'smart_link_id' => $smartLinkId,
-            'slug' => $smartLink['slug'],
-        ];
     }
     
     /**
