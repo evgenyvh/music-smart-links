@@ -26,15 +26,22 @@ function getDbConnection() {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
-                // Add connection pooling option
-                PDO::ATTR_PERSISTENT => true,
+                // Disable connection pooling to avoid max_user_connections issues
+                PDO::ATTR_PERSISTENT => false,
             ];
 
             $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
             return $pdo;
         } catch (PDOException $e) {
-            // For development, show error. For production, log error and show generic message
-            die('Database connection failed: ' . $e->getMessage());
+            // Log the error
+            error_log('Database connection error: ' . $e->getMessage());
+
+            // For development, show a more user-friendly message
+            if (strpos($e->getMessage(), 'max_user_connections') !== false) {
+                die('Database connection limit reached. Please try again in a few moments.');
+            } else {
+                die('Database connection failed. Please try again later.');
+            }
         }
     }
 
@@ -45,4 +52,21 @@ function getDbConnection() {
      */
     function closeDbConnection(&$pdo) {
         $pdo = null;
+    }
+
+    /**
+     * Execute a database query with proper connection handling
+     * 
+     * @param callable $callback Function that executes the query
+     * @return mixed Result of the callback
+     */
+    function withDbConnection($callback) {
+        $pdo = getDbConnection();
+        try {
+            $result = $callback($pdo);
+            return $result;
+        } finally {
+            // Always close the connection when done
+            closeDbConnection($pdo);
+        }
 }

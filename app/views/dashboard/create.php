@@ -38,7 +38,7 @@ $musicPlatforms = [
                     artworkUrl: '', 
                     title: '', 
                     artistName: '',
-                    platforms: []
+                    platforms: [{}] // Initialize with one empty platform
                 }">
                     <!-- Step 1: Enter Spotify URL -->
                     <h2 class="h5 mb-3">Step 1: Enter Spotify URL</h2>
