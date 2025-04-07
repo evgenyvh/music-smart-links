@@ -34,11 +34,87 @@ $musicPlatforms = [
             <form action="/dashboard/create" method="POST" id="smartLinkForm">
                 <div x-data="{ 
                     loading: false, 
+                    fetchingLinks: false,
                     metadata: null, 
                     artworkUrl: '', 
                     title: '', 
                     artistName: '',
-                    platforms: [{}] // Initialize with one empty platform
+                    platforms: [],
+                    platformsMap: <?= json_encode(array_reduce($musicPlatforms, function($result, $item) {
+                        $result[$item['id']] = $item;
+                        return $result;
+                    }, [])) ?>,
+                    addPlatform(platformId, platformUrl) {
+                        // Check if platform already exists
+                        const exists = this.platforms.some(p => p.platformId === platformId);
+                        if (!exists) {
+                            this.platforms.push({
+                                platformId: platformId,
+                                platformUrl: platformUrl
+                            });
+                        }
+                    },
+                    removePlatform(index) {
+                        this.platforms.splice(index, 1);
+                    },
+                    autoFetchLinks() {
+                        const spotifyUrl = document.getElementById('spotify_url').value;
+                        if (!spotifyUrl) {
+                            alert('Please enter a Spotify URL first');
+                            return;
+                        }
+
+                        this.fetchingLinks = true;
+
+                        // Call API to find matching links
+                        fetch('/api.php?endpoint=find-matching-links', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ spotify_url: spotifyUrl })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            this.fetchingLinks = false;
+
+                            if (data.success && data.links && data.links.length > 0) {
+                                // Add Spotify as the first platform
+                                this.platforms = [{
+                                    platformId: 1, // Spotify ID
+                                    platformUrl: spotifyUrl
+                                }];
+
+                                // Add other platforms
+                                data.links.forEach(link => {
+                                    this.addPlatform(link.platform_id, link.platform_url);
+                                });
+
+                                // Show success message
+                                alert(`Found ${data.links.length} matching links on other platforms!`);
+                            } else {
+                                alert('No matching links found on other platforms. Please add them manually.');
+                                // Initialize with empty platform
+                                if (this.platforms.length === 0) {
+                                    this.platforms = [{
+                                        platformId: 1, // Spotify ID
+                                        platformUrl: spotifyUrl
+                                    }];
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            this.fetchingLinks = false;
+                            console.error('Error:', error);
+                            alert('An error occurred while searching for matching links. Please add them manually.');
+
+                            // Initialize with empty platform
+                            if (this.platforms.length === 0) {
+                                this.platforms = [{
+                                    platformId: 1, // Spotify ID
+                                    platformUrl: spotifyUrl
+                                }];
+                            }
+                        });
+                    }
                 }">
                     <!-- Step 1: Enter Spotify URL -->
                     <h2 class="h5 mb-3">Step 1: Enter Spotify URL</h2>
@@ -53,22 +129,25 @@ $musicPlatforms = [
                                     class="btn btn-primary"
                                     x-on:click="
                                         loading = true;
-                                        fetch('/api/extract-metadata', {
+                                        fetch('/api.php?endpoint=extract-metadata', {
                                             method: 'POST',
-                                            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                                            body: 'spotify_url=' + encodeURIComponent(document.getElementById('spotify_url').value)
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ spotify_url: document.getElementById('spotify_url').value })
                                         })
                                         .then(response => response.json())
                                         .then(data => {
                                             loading = false;
                                             if (data.success) {
-                                                metadata = data.data;
+                                                metadata = data.metadata;
                                                 artworkUrl = metadata.artwork_url;
                                                 title = metadata.title;
                                                 artistName = metadata.artist_name;
                                                 document.getElementById('title').value = title;
                                                 document.getElementById('artist_name').value = artistName;
                                                 document.getElementById('artwork_url').value = artworkUrl;
+
+                                                // Auto fetch links after metadata is extracted
+                                                autoFetchLinks();
                                             } else {
                                                 alert('Could not extract metadata. Please fill in the details manually.');
                                             }
@@ -144,7 +223,7 @@ $musicPlatforms = [
                         <template x-for="(platform, index) in platforms" :key="index">
                             <div class="row mb-3 align-items-center">
                                 <div class="col-md-5">
-                                    <select :name="'platform[' + index + ']'" class="form-select">
+                                    <select :name="'platform[' + index + ']'" class="form-select" x-model="platform.platformId">
                                         <option value="">Select Platform</option>
                                         <?php foreach ($musicPlatforms as $platform): ?>
                                             <option value="<?= $platform['id'] ?>"><?= htmlspecialchars($platform['name']) ?></option>
@@ -153,11 +232,11 @@ $musicPlatforms = [
                                 </div>
 
                                 <div class="col-md-6">
-                                    <input type="url" :name="'platform_url[' + index + ']'" class="form-control" placeholder="https://...">
+                                    <input type="url" :name="'platform_url[' + index + ']'" class="form-control" placeholder="https://" x-model="platform.platformUrl">
                                 </div>
 
                                 <div class="col-md-1">
-                                    <button type="button" class="btn btn-outline-danger" @click="platforms.splice(index, 1)">
+                                    <button type="button" class="btn btn-outline-danger" @click="removePlatform(index)">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
                                             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
                                         </svg>
@@ -166,9 +245,9 @@ $musicPlatforms = [
                             </div>
                         </template>
 
-                        <button type="button" class="btn btn-outline-primary" @click="platforms.push({})">
+                        <button type="button" class="btn btn-outline-primary" @click="addPlatform('', '')">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-2" viewBox="0 0 16 16">
-                                <path d="M8 0a1 1 0 0 1 1 1v6h6a1 1 0 1 1 0 2H9v6a1 1 0 1 1-2 0V9H1a1 1 0 0 1 0-2h6V1a1 1 0 0 1 1-1z"/>
+                                <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
                             </svg>
                             Add Platform Link
                         </button>
