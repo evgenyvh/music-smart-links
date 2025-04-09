@@ -1,39 +1,35 @@
 /**
- * Create a new smart link
+ * Add a platform link to a smart link
  * 
- * @param int $userId User ID
- * @param array $data Smart link data
+ * @param int $smartLinkId Smart link ID
+ * @param int $platformId Platform ID
+ * @param string $platformUrl Platform URL
  * @param PDO $pdo Optional PDO connection
- * @return int|false The new smart link ID or false on failure
+ * @return bool Success status
  */
-public function create($userId, $data, $pdo = null) {
-    // If no connection provided, get one
-    $pdo = $pdo ?? getDbConnection();
-    
-    // Generate a unique slug
-    $slug = $this->generateSlug($data['title'] ?? 'link');
+public function addPlatformLink($smartLinkId, $platformId, $platformUrl, $pdo = null) {
+    // If no PDO connection provided, get one
+    $db = $pdo ?? $this->db;
     
     try {
-        $stmt = $pdo->prepare("
-            INSERT INTO smart_links 
-            (user_id, title, slug, spotify_url, artwork_url, artist_name, track_name, created_at) 
-            VALUES 
-            (:user_id, :title, :slug, :spotify_url, :artwork_url, :artist_name, :track_name, NOW())
+        error_log("Adding platform link: SmartLink ID=$smartLinkId, Platform ID=$platformId, URL=$platformUrl");
+        
+        $stmt = $db->prepare("
+            INSERT INTO link_platforms (smart_link_id, platform_id, platform_url)
+            VALUES (:smart_link_id, :platform_id, :platform_url)
         ");
         
-        $stmt->execute([
-            ':user_id' => $userId,
-            ':title' => $data['title'] ?? 'My Smart Link',
-            ':slug' => $slug,
-            ':spotify_url' => $data['spotify_url'],
-            ':artwork_url' => $data['artwork_url'] ?? null,
-            ':artist_name' => $data['artist_name'] ?? null,
-            ':track_name' => $data['track_name'] ?? null,
+        $result = $stmt->execute([
+            ':smart_link_id' => $smartLinkId,
+            ':platform_id' => $platformId,
+            ':platform_url' => $platformUrl,
         ]);
         
-        return $pdo->lastInsertId();
+        error_log("Platform link addition result: " . ($result ? 'success' : 'failure'));
+        
+        return $result;
     } catch (PDOException $e) {
-        error_log('Error creating smart link: ' . $e->getMessage());
+        error_log('Error adding platform link: ' . $e->getMessage());
         return false;
     }
 }

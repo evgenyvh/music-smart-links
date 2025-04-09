@@ -28,6 +28,12 @@ class SmartLinkController {
      * @return array Result with success status and message
      */
     public function createSmartLink($data) {
+        // Debug incoming data
+        error_log('Received data in createSmartLink: ' . json_encode($data));
+        if (!empty($data['platform_links'])) {
+            error_log('Platform links: ' . json_encode($data['platform_links']));
+        }
+
         // Check if user is logged in
         if (!$this->authController->isLoggedIn()) {
             return [
@@ -98,18 +104,24 @@ class SmartLinkController {
 
         // Add platform links if provided
         if (!empty($data['platform_links']) && is_array($data['platform_links'])) {
+            error_log('Processing ' . count($data['platform_links']) . ' platform links');
             withDbConnection(function($pdo) use ($smartLinkId, $data) {
                 foreach ($data['platform_links'] as $platformLink) {
                     if (!empty($platformLink['platform_id']) && !empty($platformLink['platform_url'])) {
-                        $this->smartLinkModel->addPlatformLink(
+                        $result = $this->smartLinkModel->addPlatformLink(
                             $smartLinkId,
                             $platformLink['platform_id'],
                             $platformLink['platform_url'],
                             $pdo
                         );
+                        error_log('Added platform link: ' . json_encode($platformLink) . ', Result: ' . ($result ? 'success' : 'fail'));
+                    } else {
+                        error_log('Skipping invalid platform link: ' . json_encode($platformLink));
                     }
                 }
             });
+        } else {
+            error_log('No platform links provided or invalid format');
         }
 
         // Get the created smart link with slug
