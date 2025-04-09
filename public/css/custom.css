@@ -383,12 +383,31 @@
     line-height: 0;
   }
 
+  /* SVG Display Fix */
   svg {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  /* Ensure proper icon display in the platform logos section */
+  .icon-wrap svg {
+    display: block;
+    width: 24px;
+    height: 24px;
+  }
+
+  /* Proper display for feature icons */
+  .feature-icon svg {
+    width: 30px;
+    height: 30px;
     display: block;
   }
 
-  svg path {
-    display: none;
+  /* Fix for SVGs in platform buttons */
+  .platform-button .platform-icon svg {
+    width: 24px;
+    height: 24px;
+    margin-right: 12px;
   }
 
   /* Fix for Coming Soon badges */

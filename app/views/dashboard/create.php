@@ -1,4 +1,3 @@
-<<<<<<< Tabnine <<<<<<<
 <?php
 $pageTitle = 'Create Smart Link - Music Smart Links';
 ob_start();
@@ -344,4 +343,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
->>>>>>> Tabnine >>>>>>>// {"source":"chat"}
