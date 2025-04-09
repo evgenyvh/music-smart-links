@@ -178,6 +178,139 @@ $content = ob_get_clean();
 include BASE_PATH . '/app/views/layout.php';
 ?>
 <script>
+function smartLinkForm() {
+    return {
+        title: '',
+        artistName: '',
+        artworkUrl: '',
+        autoSearch: true,
+        loading: false,
+        platforms: [],
+        
+        // Add a new platform input
+        addPlatform(platformId = '', platformUrl = '') {
+            this.platforms.push({
+                platformId: platformId,
+                platformUrl: platformUrl
+            });
+        },
+        
+        // Remove a platform
+        removePlatform(index) {
+            this.platforms.splice(index, 1);
+        },
+        
+        // Reset metadata fields
+        resetMetadata() {
+            // Only reset if user manually changes the URL
+            if (!this.loading) {
+                this.title = '';
+                this.artistName = '';
+                this.artworkUrl = '';
+            }
+        },
+        
+        // Extract metadata from Spotify URL
+        extractMetadata() {
+            const spotifyUrl = document.getElementById('spotify_url').value.trim();
+            if (!spotifyUrl) {
+                alert('Please enter a Spotify URL');
+                return;
+            }
+            
+            this.loading = true;
+            
+            // Call the API to extract metadata
+            fetch('/api/extract-metadata', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'spotify_url=' + encodeURIComponent(spotifyUrl)
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.loading = false;
+                
+                if (data.success) {
+                    // Update form fields with metadata
+                    if (data.data) {
+                        this.title = data.data.title || '';
+                        this.artistName = data.data.artist_name || '';
+                        this.artworkUrl = data.data.artwork_url || '';
+                    }
+                    
+                    // Add Spotify as the first platform if not already present
+                    if (!this.platforms.some(p => p.platformId === '1')) {
+                        this.platforms.push({
+                            platformId: '1', // Spotify ID
+                            platformUrl: spotifyUrl
+                        });
+                    }
+                    
+                    // If auto-search is checked, find matching links
+                    if (this.autoSearch) {
+                        this.findMatchingLinks(spotifyUrl);
+                    }
+                } else {
+                    alert('Error extracting metadata: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                this.loading = false;
+                console.error('Error:', error);
+                alert('An error occurred while extracting metadata.');
+            });
+        },
+        
+        // Find matching links on other platforms
+        findMatchingLinks(spotifyUrl) {
+            if (!spotifyUrl) return;
+            
+            this.loading = true;
+            
+            // Call the API to find matching links
+            fetch('/api/find-matching-links', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'spotify_url=' + encodeURIComponent(spotifyUrl)
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.loading = false;
+                
+                if (data.success && data.links && data.links.length > 0) {
+                    // Process the links
+                    data.links.forEach(link => {
+                        // Check if this platform is already added
+                        const platformExists = this.platforms.some(p => 
+                            p.platformId === link.platform_id.toString());
+                        
+                        // If not, add it
+                        if (!platformExists) {
+                            this.platforms.push({
+                                platformId: link.platform_id.toString(),
+                                platformUrl: link.platform_url
+                            });
+                        }
+                    });
+                    
+                    console.log('Added platform links:', data.links);
+                } else {
+                    console.log('No matching links found or error:', data);
+                }
+            })
+            .catch(error => {
+                this.loading = false;
+                console.error('Error:', error);
+                alert('An error occurred while finding matching links.');
+            });
+        }
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('smartLinkForm');
 
@@ -226,6 +359,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.submit();
             }
         });
+        
+        // Set up event listener for the Spotify URL input to trigger automatic search
+        const spotifyUrlInput = document.getElementById('spotify_url');
+        const autoSearchCheckbox = document.getElementById('autoSearch');
+        
+        if (spotifyUrlInput && autoSearchCheckbox) {
+            spotifyUrlInput.addEventListener('blur', function() {
+                // If the URL input loses focus and has content, and auto-search is checked
+                if (this.value.trim() && autoSearchCheckbox.checked) {
+                    // Get the Alpine.js component and call extractMetadata
+                    if (window.Alpine) {
+                        const component = Alpine.$data(form);
+                        if (component) {
+                            component.extractMetadata();
+                        }
+                    }
+                }
+            });
+        }
     }
 });
 </script>

@@ -222,7 +222,15 @@ switch (true) {
                     'data' => $metadata,
                 ]);
                 break;
-
+                
+                case 'find-matching-links':
+                    $spotifyUrl = $_POST['spotify_url'] ?? '';
+                    $musicPlatformService = new MusicPlatformService();
+                    $result = $musicPlatformService->findMatchingLinks($spotifyUrl);
+            
+                    echo json_encode($result);
+                    break;
+            
             case 'verify-email':
                 $email = $_POST['email'] ?? '';
                 $emailVerifier = new EmailVerificationService();
