@@ -1,5 +1,19 @@
 <?php
 $pageTitle = 'Create Smart Link - Music Smart Links';
+
+// Debug information - output the request method and form data
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "<div style='background-color:#f8f9fa;border:1px solid #ddd;padding:15px;margin-bottom:20px'>";
+    echo "<h4>POST Data Received:</h4>";
+    echo "<pre>";
+    print_r($_POST);
+    echo "</pre>";
+    echo "</div>";
+}
+
+// Log the request method
+error_log('Request method: ' . $_SERVER['REQUEST_METHOD']);
+
 ob_start();
 
 // Load music platforms from database (this would need to be implemented)
@@ -37,7 +51,26 @@ foreach ($musicPlatforms as $platform) {
             <h1 class="h4 mb-0">Create New Smart Link</h1>
         </div>
         <div class="card-body p-4">
-            <form action="/dashboard/create" method="POST" id="smartLinkForm" x-data="smartLinkForm()">
+            <!-- Display any error messages -->
+            <?php if (isset($_SESSION['error'])): ?>
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <?= htmlspecialchars($_SESSION['error']) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <?php unset($_SESSION['error']); ?>
+            <?php endif; ?>
+
+            <!-- Simple test form for debugging -->
+            <div class="mb-4 p-3 bg-light">
+                <h5>Test Form (For Debugging)</h5>
+                <form action="/dashboard/create" method="POST" class="mb-3">
+                    <input type="text" name="test_field" value="test_value" class="form-control mb-2">
+                    <button type="submit" class="btn btn-secondary">Submit Test Form</button>
+                </form>
+                <small class="text-muted">This form is for testing only - to verify that basic form submission works.</small>
+            </div>
+
+            <form action="/dashboard/create" method="POST" id="smartLinkForm" x-data="smartLinkForm()" onsubmit="console.log('Main form submitted'); return true;">
                 <!-- Step 1: Enter Spotify URL -->
                 <h2 class="h5 mb-3">Step 1: Enter Spotify URL</h2>
                 <div class="mb-4">
@@ -161,7 +194,7 @@ foreach ($musicPlatforms as $platform) {
                         Cancel
                     </a>
 
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="submitButton">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-check-lg me-2" viewBox="0 0 16 16">
                             <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
                         </svg>
@@ -313,71 +346,35 @@ function smartLinkForm() {
 
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('smartLinkForm');
+    const submitButton = document.getElementById('submitButton');
 
     if (form) {
-        form.addEventListener('submit', function(e) {
-            // Prevent default submission
-            e.preventDefault();
-
-            // Validate form
-            let isValid = true;
-            const spotifyUrl = document.getElementById('spotify_url').value;
-            const title = document.getElementById('title').value;
-
-            if (!spotifyUrl) {
-                alert('Spotify URL is required');
-                isValid = false;
-            }
-
-            if (!title) {
-                alert('Title is required');
-                isValid = false;
-            }
-
-            // Check if at least one platform link is added
-            const platforms = document.querySelectorAll('select[name^="platform["]');
-            const platformUrls = document.querySelectorAll('input[name^="platform_url["]');
-
-            let hasPlatformLinks = false;
-            for (let i = 0; i < platforms.length; i++) {
-                if (platforms[i].value && platformUrls[i].value) {
-                    hasPlatformLinks = true;
-                    break;
-                }
-            }
-
-            if (!hasPlatformLinks) {
-                // Just log a warning, don't block submission
-                console.warn('No platform links added');
-            }
-
-            if (isValid) {
-                // Log form data for debugging
-                console.log('Submitting form with data:', new FormData(form));
-
-                // Submit the form
-                form.submit();
-            }
-        });
-        
-        // Set up event listener for the Spotify URL input to trigger automatic search
-        const spotifyUrlInput = document.getElementById('spotify_url');
-        const autoSearchCheckbox = document.getElementById('autoSearch');
-        
-        if (spotifyUrlInput && autoSearchCheckbox) {
-            spotifyUrlInput.addEventListener('blur', function() {
-                // If the URL input loses focus and has content, and auto-search is checked
-                if (this.value.trim() && autoSearchCheckbox.checked) {
-                    // Get the Alpine.js component and call extractMetadata
-                    if (window.Alpine) {
-                        const component = Alpine.$data(form);
-                        if (component) {
-                            component.extractMetadata();
-                        }
-                    }
-                }
-            });
+        // Add initial platform input
+        const component = window.Alpine && Alpine.$data(form);
+        if (component && typeof component.addPlatform === 'function') {
+            component.addPlatform('', '');
         }
+
+        form.addEventListener('submit', function(e) {
+            // Log form submission
+            console.log('Form submit event triggered');
+            
+            // Add loading state to button
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Creating...';
+            }
+            
+            // Log form data
+            const formData = new FormData(form);
+            console.log('Form data being submitted:');
+            for (const pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+            
+            // Continue with form submission
+            return true;
+        });
     }
 });
 </script>
