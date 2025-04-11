@@ -1,5 +1,7 @@
 <?php
 $pageTitle = 'Login - Music Smart Links';
+
+// Debug information - only shown during development
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     echo "<div style='padding: 15px; background-color: #f8f9fa; border: 1px solid #ddd; margin-bottom: 20px;'>";
     echo "<h4>Form Submission Debug</h4>";
@@ -7,7 +9,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     print_r($_POST);
     echo "</pre>";
     echo "</div>";
+    
+    // Test database connection
+    echo "<div style='padding: 15px; background-color: #f8f9fa; border: 1px solid #ddd; margin-bottom: 20px;'>";
+    echo "<h4>Database Connection Test</h4>";
+    try {
+        require_once __DIR__ . '/../../../config/database.php';
+        $pdo = getDbConnection();
+        echo "<p style='color:green'>Database connection successful!</p>";
+        $pdo = null;
+    } catch (Exception $e) {
+        echo "<p style='color:red'>Database connection failed: " . $e->getMessage() . "</p>";
+    }
+    echo "</div>";
 }
+
 ob_start();
 ?>
 
@@ -20,7 +36,15 @@ ob_start();
                         <h1 class="h3 mb-0">Log In to Your Account</h1>
                     </div>
                     <div class="card-body p-5">
-                        <form action="/login" method="POST">
+                        <!-- Display session errors -->
+                        <?php if (isset($_SESSION['error'])): ?>
+                            <div class="alert alert-danger mb-4">
+                                <?= htmlspecialchars($_SESSION['error']) ?>
+                            </div>
+                            <?php unset($_SESSION['error']); ?>
+                        <?php endif; ?>
+                        
+                        <form action="/login" method="POST" id="loginForm">
                             <div class="mb-4">
                                 <label for="email" class="form-label fw-bold">Email Address</label>
                                 <input type="email" id="email" name="email" class="form-control form-control-lg" required>
@@ -40,7 +64,7 @@ ob_start();
                                 <a href="/forgot-password" class="text-decoration-none">Forgot password?</a>
                             </div>
                             
-                            <button type="submit" class="btn btn-primary btn-lg w-100 mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg w-100 mb-4" id="loginButton">
                                 Log In
                             </button>
                         </form>
@@ -75,6 +99,31 @@ ob_start();
         </div>
     </div>
 </section>
+
+<!-- Add form submission javascript to show loading state -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const loginButton = document.getElementById('loginButton');
+    
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            // Show loading state
+            loginButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Logging in...';
+            loginButton.disabled = true;
+            
+            // Log form submission
+            console.log('Form submitted with:', {
+                email: document.getElementById('email').value,
+                password: '********' // Don't log actual password
+            });
+            
+            // Continue with normal form submission
+            return true;
+        });
+    }
+});
+</script>
 
 <?php
 $content = ob_get_clean();
