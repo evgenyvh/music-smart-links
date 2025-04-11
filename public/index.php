@@ -5,6 +5,17 @@ session_start();
 // Define base path
 define('BASE_PATH', dirname(__DIR__));
 
+// Make sure log directory exists
+$logDir = BASE_PATH . '/storage/logs';
+if (!is_dir($logDir)) {
+    mkdir($logDir, 0755, true);
+}
+
+// Initialize error logging
+ini_set('log_errors', 1);
+ini_set('error_log', $logDir . '/app.log');
+error_log('Application started - ' . date('Y-m-d H:i:s'));
+
 // Initialize error logging
 ini_set('log_errors', 1);
 ini_set('error_log', BASE_PATH . '/storage/logs/app.log');
