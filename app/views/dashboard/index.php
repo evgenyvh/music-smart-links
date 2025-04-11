@@ -5,12 +5,29 @@ ob_start();
 // Get user data
 $user = $authController->getCurrentUser();
 
-// Get user's smart links if available
+// Get user's smart links if available - $links should be passed from the router
 $smartLinks = $links['data'] ?? [];
 ?>
 
-<!-- Your dashboard HTML goes here -->
+<!-- Dashboard HTML -->
 <div class="container py-5">
+    <!-- Success/Error Messages -->
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($_SESSION['success']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php unset($_SESSION['success']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <?= htmlspecialchars($_SESSION['error']) ?>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <?php unset($_SESSION['error']); ?>
+    <?php endif; ?>
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Your Smart Links</h1>
         <a href="/dashboard/create" class="btn btn-primary">

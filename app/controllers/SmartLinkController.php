@@ -7,7 +7,7 @@ require_once __DIR__ . '/../services/SpotifyService.php';
 require_once __DIR__ . '/AuthController.php';
 
 class SmartLinkController {
-    private $smartLinkModel;
+    public $smartLinkModel;
     private $userModel;
     private $analyticsModel;
     private $spotifyService;
@@ -29,13 +29,11 @@ class SmartLinkController {
      */
     public function createSmartLink($data) {
         // Debug incoming data
-        error_log('Received data in createSmartLink: ' . json_encode($data));
-        if (!empty($data['platform_links'])) {
-            error_log('Platform links: ' . json_encode($data['platform_links']));
-        }
-
+        error_log('SmartLinkController - createSmartLink() called with data: ' . json_encode($data));
+        
         // Check if user is logged in
         if (!$this->authController->isLoggedIn()) {
+            error_log('SmartLinkController - User not logged in');
             return [
                 'success' => false,
                 'message' => 'You must be logged in to create a smart link',
@@ -44,40 +42,61 @@ class SmartLinkController {
 
         $currentUser = $this->authController->getCurrentUser();
         $userId = $currentUser['id'];
+        error_log('SmartLinkController - User ID: ' . $userId);
 
         // Check if user has reached their limit (free tier = 3 links)
         $config = require __DIR__ . '/../../config/app.php';
 
-        // Use the withDbConnection function to ensure connections are closed
-        $userLinkCount = withDbConnection(function($pdo) use ($userId) {
-            return $this->userModel->countSmartLinks($userId, $pdo);
-        });
-        if ($userLinkCount >= $config['free_tier']['max_links']) {
-            return [
-                'success' => false,
-                'message' => 'You have reached your limit of ' . $config['free_tier']['max_links'] . ' smart links. Upgrade to create more.',
-            ];
+        try {
+            $userLinkCount = $this->userModel->countSmartLinks($userId);
+            error_log('SmartLinkController - User link count: ' . $userLinkCount . ' (limit: ' . $config['free_tier']['max_links'] . ')');
+            
+            if ($userLinkCount >= $config['free_tier']['max_links']) {
+                error_log('SmartLinkController - User reached link limit');
+                return [
+                    'success' => false,
+                    'message' => 'You have reached your limit of ' . $config['free_tier']['max_links'] . ' smart links. Upgrade to create more.',
+                ];
+            }
+        } catch (Exception $e) {
+            error_log('SmartLinkController - Error checking user link count: ' . $e->getMessage());
+            // Continue anyway, we'll just create the link
         }
 
         // Validate required fields
         if (empty($data['spotify_url'])) {
+            error_log('SmartLinkController - Missing Spotify URL');
             return [
                 'success' => false,
                 'message' => 'Spotify URL is required',
             ];
         }
 
+        if (empty($data['title'])) {
+            error_log('SmartLinkController - Missing title');
+            return [
+                'success' => false,
+                'message' => 'Title is required',
+            ];
+        }
+
         // Extract metadata from Spotify URL if possible
-        $metadata = $this->spotifyService->extractMetadata($data['spotify_url']);
+        try {
+            $metadata = $this->spotifyService->extractMetadata($data['spotify_url']);
+            error_log('SmartLinkController - Spotify metadata: ' . json_encode($metadata));
+        } catch (Exception $e) {
+            error_log('SmartLinkController - Error extracting Spotify metadata: ' . $e->getMessage());
+            $metadata = null;
+        }
 
         if ($metadata) {
             // Use extracted metadata if available
             $linkData = [
                 'title' => $data['title'] ?? $metadata['title'],
                 'spotify_url' => $data['spotify_url'],
-                'artwork_url' => $metadata['artwork_url'],
-                'artist_name' => $metadata['artist_name'],
-                'track_name' => $metadata['track_name'],
+                'artwork_url' => $data['artwork_url'] ?? $metadata['artwork_url'] ?? null,
+                'artist_name' => $data['artist_name'] ?? $metadata['artist_name'] ?? null,
+                'track_name' => $data['track_name'] ?? $metadata['track_name'] ?? null,
             ];
         } else {
             // Use provided data without metadata
@@ -90,51 +109,72 @@ class SmartLinkController {
             ];
         }
 
-        // Create the smart link using withDbConnection
-        $smartLinkId = withDbConnection(function($pdo) use ($userId, $linkData) {
-            return $this->smartLinkModel->create($userId, $linkData, $pdo);
-        });
+        error_log('SmartLinkController - Creating smart link with data: ' . json_encode($linkData));
 
-        if (!$smartLinkId) {
+        // Create the smart link
+        try {
+            $smartLinkId = $this->smartLinkModel->create($userId, $linkData);
+            error_log('SmartLinkController - Smart link created with ID: ' . $smartLinkId);
+            
+            if (!$smartLinkId) {
+                error_log('SmartLinkController - Failed to create smart link');
+                return [
+                    'success' => false,
+                    'message' => 'Failed to create smart link. Please try again.',
+                ];
+            }
+        } catch (Exception $e) {
+            error_log('SmartLinkController - Exception creating smart link: ' . $e->getMessage());
             return [
                 'success' => false,
-                'message' => 'Failed to create smart link. Please try again.',
+                'message' => 'Error creating smart link: ' . $e->getMessage(),
             ];
         }
 
         // Add platform links if provided
         if (!empty($data['platform_links']) && is_array($data['platform_links'])) {
-            error_log('Processing ' . count($data['platform_links']) . ' platform links');
-            withDbConnection(function($pdo) use ($smartLinkId, $data) {
-                foreach ($data['platform_links'] as $platformLink) {
-                    if (!empty($platformLink['platform_id']) && !empty($platformLink['platform_url'])) {
+            error_log('SmartLinkController - Processing ' . count($data['platform_links']) . ' platform links');
+            
+            foreach ($data['platform_links'] as $platformLink) {
+                if (!empty($platformLink['platform_id']) && !empty($platformLink['platform_url'])) {
+                    try {
                         $result = $this->smartLinkModel->addPlatformLink(
                             $smartLinkId,
                             $platformLink['platform_id'],
-                            $platformLink['platform_url'],
-                            $pdo
+                            $platformLink['platform_url']
                         );
-                        error_log('Added platform link: ' . json_encode($platformLink) . ', Result: ' . ($result ? 'success' : 'fail'));
-                    } else {
-                        error_log('Skipping invalid platform link: ' . json_encode($platformLink));
+                        error_log('SmartLinkController - Added platform link: ' . json_encode($platformLink) . ', Result: ' . ($result ? 'success' : 'fail'));
+                    } catch (Exception $e) {
+                        error_log('SmartLinkController - Error adding platform link: ' . $e->getMessage());
+                        // Continue with the next one even if this one fails
                     }
+                } else {
+                    error_log('SmartLinkController - Skipping invalid platform link: ' . json_encode($platformLink));
                 }
-            });
+            }
         } else {
-            error_log('No platform links provided or invalid format');
+            error_log('SmartLinkController - No platform links provided or invalid format');
         }
 
         // Get the created smart link with slug
-        $smartLink = withDbConnection(function($pdo) use ($smartLinkId) {
-            return $this->smartLinkModel->findById($smartLinkId, $pdo);
-        });
-
-        return [
-            'success' => true,
-            'message' => 'Smart link created successfully',
-            'smart_link_id' => $smartLinkId,
-            'slug' => $smartLink['slug'],
-        ];
+        try {
+            $smartLink = $this->smartLinkModel->findById($smartLinkId);
+            error_log('SmartLinkController - Retrieved created smart link: ' . json_encode($smartLink));
+            
+            return [
+                'success' => true,
+                'message' => 'Smart link created successfully',
+                'smart_link_id' => $smartLinkId,
+                'slug' => $smartLink['slug'],
+            ];
+        } catch (Exception $e) {
+            error_log('SmartLinkController - Error retrieving created smart link: ' . $e->getMessage());
+            return [
+                'success' => true,
+                'message' => 'Smart link created successfully, but could not retrieve details',
+                'smart_link_id' => $smartLinkId,
+            ];
+        }
     }
     
     /**

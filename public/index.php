@@ -5,17 +5,6 @@ session_start();
 // Define base path
 define('BASE_PATH', dirname(__DIR__));
 
-// Make sure log directory exists
-$logDir = BASE_PATH . '/storage/logs';
-if (!is_dir($logDir)) {
-    mkdir($logDir, 0755, true);
-}
-
-// Initialize error logging
-ini_set('log_errors', 1);
-ini_set('error_log', $logDir . '/app.log');
-error_log('Application started - ' . date('Y-m-d H:i:s'));
-
 // Initialize error logging
 ini_set('log_errors', 1);
 ini_set('error_log', BASE_PATH . '/storage/logs/app.log');
@@ -145,26 +134,32 @@ switch (true) {
 
     // Dashboard routes
     case $requestUri === '/dashboard' && $authController->isLoggedIn():
-        $smartLinkController = new SmartLinkController();
-        $links = $smartLinkController->getUserSmartLinks();
-        require BASE_PATH . '/app/views/dashboard/index.php';
+        try {
+            $smartLinkController = new SmartLinkController();
+            $links = $smartLinkController->getUserSmartLinks();
+            include BASE_PATH . '/app/views/dashboard/index.php';
+        } catch (Exception $e) {
+            error_log('Exception loading dashboard: ' . $e->getMessage());
+            $_SESSION['error'] = 'Error loading dashboard. Please try again.';
+            include BASE_PATH . '/app/views/dashboard/index.php';
+        }
         break;
 
     case $requestUri === '/dashboard/create' && $authController->isLoggedIn():
-        require BASE_PATH . '/app/views/dashboard/create.php';
+        include BASE_PATH . '/app/views/dashboard/create.php';
         break;
 
     case $requestUri === '/dashboard/create' && $method === 'POST' && $authController->isLoggedIn():
         $smartLinkController = new SmartLinkController();
 
         // Debug: Log the POST data
-        error_log('POST data: ' . json_encode($_POST));
+        error_log('Smart Link creation - POST data: ' . json_encode($_POST));
         
         // Process platform links if submitted
         $platformLinks = [];
         if (isset($_POST['platform']) && is_array($_POST['platform'])) {
             foreach ($_POST['platform'] as $i => $platformId) {
-                if (!empty($platformId) && !empty($_POST['platform_url'][$i])) {
+                if (!empty($platformId) && isset($_POST['platform_url'][$i]) && !empty($_POST['platform_url'][$i])) {
                     $platformLinks[] = [
                         'platform_id' => $platformId,
                         'platform_url' => $_POST['platform_url'][$i],
@@ -183,16 +178,20 @@ switch (true) {
         ];
         
         // Debug: Log the processed data
-        error_log('Processed data: ' . json_encode($data));
+        error_log('Smart Link creation - Processed data: ' . json_encode($data));
         
         try {
             $result = $smartLinkController->createSmartLink($data);
+            
+            // Debug: Log the creation result
+            error_log('Smart Link creation - Result: ' . json_encode($result));
 
             if ($result['success']) {
                 $_SESSION['success'] = $result['message'];
                 header('Location: /dashboard');
                 exit;
             } else {
+                error_log('Smart Link creation - Error: ' . $result['message']);
                 $_SESSION['error'] = $result['message'];
                 // Store form data in session to repopulate the form
                 $_SESSION['form_data'] = $data;
@@ -200,7 +199,8 @@ switch (true) {
                 exit;
             }
         } catch (Exception $e) {
-            error_log('Exception during smart link creation: ' . $e->getMessage());
+            // Debug: Log any exceptions
+            error_log('Smart Link creation - Exception: ' . $e->getMessage());
             $_SESSION['error'] = 'An unexpected error occurred. Please try again.';
             $_SESSION['form_data'] = $data;
             header('Location: /dashboard/create');
@@ -219,16 +219,16 @@ switch (true) {
             if ($result['success']) {
                 $smartLink = $result['data']['smart_link'];
                 $platformLinks = $result['data']['platform_links'];
-                require BASE_PATH . '/app/views/link.php';
+                include BASE_PATH . '/app/views/link.php';
             } else {
                 error_log('Smart link not found: ' . $slug);
                 http_response_code(404);
-                require BASE_PATH . '/app/views/errors/404.php';
+                include BASE_PATH . '/app/views/errors/404.php';
             }
         } catch (Exception $e) {
             error_log('Exception loading smart link: ' . $e->getMessage());
             http_response_code(404);
-            require BASE_PATH . '/app/views/errors/404.php';
+            include BASE_PATH . '/app/views/errors/404.php';
         }
         break;
 
@@ -392,6 +392,6 @@ switch (true) {
     // Default - 404 page
     default:
         http_response_code(404);
-        require BASE_PATH . '/app/views/errors/404.php';
+        include BASE_PATH . '/app/views/errors/404.php';
         break;
 }
