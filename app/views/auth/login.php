@@ -1,5 +1,13 @@
 <?php
 $pageTitle = 'Login - Music Smart Links';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "<div style='padding: 15px; background-color: #f8f9fa; border: 1px solid #ddd; margin-bottom: 20px;'>";
+    echo "<h4>Form Submission Debug</h4>";
+    echo "<pre>";
+    print_r($_POST);
+    echo "</pre>";
+    echo "</div>";
+}
 ob_start();
 ?>
 
