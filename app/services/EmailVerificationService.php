@@ -80,6 +80,7 @@ class EmailVerificationService {
     public function verifyEmail($email) {
         // Check rate limit
         if (!$this->checkRateLimit()) {
+            error_log('Daily email verification limit exceeded: ' . $this->requestCount . '/' . $this->dailyLimit);
             return [
                 'success' => false,
                 'message' => 'Daily email verification limit exceeded',
@@ -87,24 +88,42 @@ class EmailVerificationService {
             ];
         }
         
-        // Increment request count
+        // Increment request count first to prevent race conditions
         $this->incrementRequestCount();
         
         // Build the API URL
         $url = $this->apiUrl . '?email=' . urlencode($email) . '&key=' . $this->apiKey . '&mode=' . $this->mode;
         
-        // Make the API request
+        // Make the API request with proper error handling
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10); // Add timeout to prevent hanging
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'JAE Smartlink Email Verification');
+        
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
         curl_close($ch);
+        
+        // Log the response for debugging
+        error_log('Email verification response for ' . $email . ': ' . substr($response, 0, 200) . (strlen($response) > 200 ? '...' : ''));
+        
+        if ($error) {
+            error_log('Curl error verifying email: ' . $error);
+            return [
+                'success' => false,
+                'message' => 'Email verification service connection error',
+                'data' => null
+            ];
+        }
         
         if ($httpCode !== 200) {
             error_log('Error verifying email. HTTP code: ' . $httpCode);
             return [
                 'success' => false,
-                'message' => 'Email verification service error',
+                'message' => 'Email verification service error (HTTP ' . $httpCode . ')',
                 'data' => null
             ];
         }
@@ -112,6 +131,7 @@ class EmailVerificationService {
         $responseData = json_decode($response, true);
         
         if (!$responseData) {
+            error_log('Invalid JSON response from email verification service');
             return [
                 'success' => false,
                 'message' => 'Invalid response from email verification service',

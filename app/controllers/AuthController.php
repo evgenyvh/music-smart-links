@@ -133,6 +133,44 @@ class AuthController {
                 ];
             }
             
+            // Verify email format first (basic check)
+            if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid email format',
+                ];
+            }
+            
+            // Check if user exists before verification (to avoid unnecessary API calls)
+            $existingUser = $this->userModel->findByEmail($data['email']);
+            if (!$existingUser) {
+                return [
+                    'success' => false,
+                    'message' => 'Invalid email or password',
+                ];
+            }
+            
+            // Optional: Re-verify email with Reoon
+            try {
+                $verificationResult = $this->emailVerifier->verifyEmail($data['email']);
+                
+                // Log verification result for debugging
+                error_log('Email verification result for ' . $data['email'] . ': ' . json_encode($verificationResult));
+                
+                // Check for critical issues that would prevent login
+                if (!$verificationResult['success']) {
+                    error_log('Email verification failed: ' . $verificationResult['message']);
+                } elseif (isset($verificationResult['data']['is_deliverable']) && 
+                         !$verificationResult['data']['is_deliverable']) {
+                    // Log but don't block login - just for monitoring
+                    error_log('Warning: Email may not be deliverable: ' . $data['email']);
+                }
+            } catch (Exception $e) {
+                // Log error but don't block login if verification service fails
+                error_log('Email verification service error: ' . $e->getMessage());
+            }
+            
+            // Verify password
             $user = $this->userModel->verifyPassword($data['email'], $data['password']);
             
             if (!$user) {

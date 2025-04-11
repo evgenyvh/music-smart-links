@@ -2,12 +2,21 @@
 // Start session
 session_start();
 
+// Define base path
+define('BASE_PATH', dirname(__DIR__));
+
+// Initialize error logging
+ini_set('log_errors', 1);
+ini_set('error_log', BASE_PATH . '/storage/logs/app.log');
+
+// Make sure log directory exists
+if (!is_dir(BASE_PATH . '/storage/logs')) {
+    mkdir(BASE_PATH . '/storage/logs', 0755, true);
+}
+
 // Set error reporting for development
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
-// Define base path
-define('BASE_PATH', dirname(__DIR__));
 
 // Autoload classes (simple autoloader)
 spl_autoload_register(function ($className) {
@@ -113,11 +122,12 @@ switch (true) {
 
         // Debug: Log the POST data
         error_log('POST data: ' . json_encode($_POST));
+        
         // Process platform links if submitted
         $platformLinks = [];
         if (isset($_POST['platform']) && is_array($_POST['platform'])) {
             foreach ($_POST['platform'] as $i => $platformId) {
-                if (!empty($_POST['platform_url'][$i])) {
+                if (!empty($platformId) && !empty($_POST['platform_url'][$i])) {
                     $platformLinks[] = [
                         'platform_id' => $platformId,
                         'platform_url' => $_POST['platform_url'][$i],
@@ -134,6 +144,10 @@ switch (true) {
             'track_name' => $_POST['track_name'] ?? null,
             'platform_links' => $platformLinks,
         ];
+        
+        // Debug: Log the processed data
+        error_log('Processed data: ' . json_encode($data));
+        
         $result = $smartLinkController->createSmartLink($data);
 
         if ($result['success']) {
@@ -223,14 +237,14 @@ switch (true) {
                 ]);
                 break;
                 
-                case 'find-matching-links':
-                    $spotifyUrl = $_POST['spotify_url'] ?? '';
-                    $musicPlatformService = new MusicPlatformService();
-                    $result = $musicPlatformService->findMatchingLinks($spotifyUrl);
-            
-                    echo json_encode($result);
-                    break;
-            
+            case 'find-matching-links':
+                $spotifyUrl = $_POST['spotify_url'] ?? '';
+                $musicPlatformService = new MusicPlatformService();
+                $result = $musicPlatformService->findMatchingLinks($spotifyUrl);
+
+                echo json_encode($result);
+                break;
+
             case 'verify-email':
                 $email = $_POST['email'] ?? '';
                 $emailVerifier = new EmailVerificationService();
