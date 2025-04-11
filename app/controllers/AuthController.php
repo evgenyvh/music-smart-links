@@ -124,6 +124,9 @@ class AuthController {
      * @return array Result with success status and message
      */
     public function login($data) {
+        // Debug information
+        error_log('Login attempt for email: ' . ($data['email'] ?? 'not provided'));
+        
         // For email authentication
         if (($data['auth_provider'] ?? 'email') === 'email') {
             if (empty($data['email']) || empty($data['password'])) {
@@ -150,7 +153,8 @@ class AuthController {
                 ];
             }
             
-            // Optional: Re-verify email with Reoon
+            // TEMPORARILY DISABLED: Re-verify email with Reoon
+            /*
             try {
                 $verificationResult = $this->emailVerifier->verifyEmail($data['email']);
                 
@@ -169,6 +173,7 @@ class AuthController {
                 // Log error but don't block login if verification service fails
                 error_log('Email verification service error: ' . $e->getMessage());
             }
+            */
             
             // Verify password
             $user = $this->userModel->verifyPassword($data['email'], $data['password']);
@@ -221,6 +226,8 @@ class AuthController {
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['name'];
+        
+        error_log('Login successful for: ' . $user['email']);
         
         return [
             'success' => true,

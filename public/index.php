@@ -66,13 +66,26 @@ switch (true) {
             'provider_id' => $_POST['provider_id'] ?? null,
         ];
 
-        $result = $authController->login($data);
-
-        if ($result['success']) {
-            header('Location: /dashboard');
-            exit;
-        } else {
-            $_SESSION['error'] = $result['message'];
+        error_log('Login POST request received for: ' . $data['email']);
+        
+        try {
+            $result = $authController->login($data);
+            
+            error_log('Login result: ' . json_encode($result));
+            
+            if ($result['success']) {
+                error_log('Redirecting to dashboard after successful login');
+                header('Location: /dashboard');
+                exit;
+            } else {
+                error_log('Login failed: ' . $result['message']);
+                $_SESSION['error'] = $result['message'];
+                header('Location: /login');
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log('Exception during login: ' . $e->getMessage());
+            $_SESSION['error'] = 'An unexpected error occurred. Please try again.';
             header('Location: /login');
             exit;
         }
@@ -88,13 +101,26 @@ switch (true) {
             'provider_id' => $_POST['provider_id'] ?? null,
         ];
 
-        $result = $authController->register($data);
+        error_log('Registration POST request received for: ' . $data['email']);
 
-        if ($result['success']) {
-            header('Location: /dashboard');
-            exit;
-        } else {
-            $_SESSION['error'] = $result['message'];
+        try {
+            $result = $authController->register($data);
+            
+            error_log('Registration result: ' . json_encode($result));
+            
+            if ($result['success']) {
+                error_log('Redirecting to dashboard after successful registration');
+                header('Location: /dashboard');
+                exit;
+            } else {
+                error_log('Registration failed: ' . $result['message']);
+                $_SESSION['error'] = $result['message'];
+                header('Location: /register');
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log('Exception during registration: ' . $e->getMessage());
+            $_SESSION['error'] = 'An unexpected error occurred. Please try again.';
             header('Location: /register');
             exit;
         }
@@ -148,15 +174,23 @@ switch (true) {
         // Debug: Log the processed data
         error_log('Processed data: ' . json_encode($data));
         
-        $result = $smartLinkController->createSmartLink($data);
+        try {
+            $result = $smartLinkController->createSmartLink($data);
 
-        if ($result['success']) {
-            $_SESSION['success'] = $result['message'];
-            header('Location: /dashboard');
-            exit;
-        } else {
-            $_SESSION['error'] = $result['message'];
-            // Store form data in session to repopulate the form
+            if ($result['success']) {
+                $_SESSION['success'] = $result['message'];
+                header('Location: /dashboard');
+                exit;
+            } else {
+                $_SESSION['error'] = $result['message'];
+                // Store form data in session to repopulate the form
+                $_SESSION['form_data'] = $data;
+                header('Location: /dashboard/create');
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log('Exception during smart link creation: ' . $e->getMessage());
+            $_SESSION['error'] = 'An unexpected error occurred. Please try again.';
             $_SESSION['form_data'] = $data;
             header('Location: /dashboard/create');
             exit;
@@ -167,13 +201,21 @@ switch (true) {
     case preg_match('/^\/link\/([a-z0-9-]+)$/', $requestUri, $matches):
         $slug = $matches[1];
         $smartLinkController = new SmartLinkController();
-        $result = $smartLinkController->getSmartLinkBySlug($slug);
+        
+        try {
+            $result = $smartLinkController->getSmartLinkBySlug($slug);
 
-        if ($result['success']) {
-            $smartLink = $result['data']['smart_link'];
-            $platformLinks = $result['data']['platform_links'];
-            require BASE_PATH . '/app/views/link.php';
-        } else {
+            if ($result['success']) {
+                $smartLink = $result['data']['smart_link'];
+                $platformLinks = $result['data']['platform_links'];
+                require BASE_PATH . '/app/views/link.php';
+            } else {
+                error_log('Smart link not found: ' . $slug);
+                http_response_code(404);
+                require BASE_PATH . '/app/views/errors/404.php';
+            }
+        } catch (Exception $e) {
+            error_log('Exception loading smart link: ' . $e->getMessage());
             http_response_code(404);
             require BASE_PATH . '/app/views/errors/404.php';
         }
@@ -184,26 +226,33 @@ switch (true) {
         $smartLinkId = $matches[1];
         $platformId = $matches[2];
 
-        $smartLinkController = new SmartLinkController();
-        $smartLinkController->trackPlatformClick($smartLinkId, $platformId);
+        try {
+            $smartLinkController = new SmartLinkController();
+            $smartLinkController->trackPlatformClick($smartLinkId, $platformId);
 
-        // Get the platform URL to redirect to
-        $smartLink = $smartLinkController->smartLinkModel->findById($smartLinkId);
-        $platformLinks = $smartLinkController->smartLinkModel->getPlatformLinks($smartLinkId);
+            // Get the platform URL to redirect to
+            $smartLink = $smartLinkController->smartLinkModel->findById($smartLinkId);
+            $platformLinks = $smartLinkController->smartLinkModel->getPlatformLinks($smartLinkId);
 
-        $redirectUrl = '';
-        foreach ($platformLinks as $link) {
-            if ($link['platform_id'] == $platformId) {
-                $redirectUrl = $link['platform_url'];
-                break;
+            $redirectUrl = '';
+            foreach ($platformLinks as $link) {
+                if ($link['platform_id'] == $platformId) {
+                    $redirectUrl = $link['platform_url'];
+                    break;
+                }
             }
-        }
 
-        if (!empty($redirectUrl)) {
-            header("Location: $redirectUrl");
-            exit;
-        } else {
-            header("Location: /link/{$smartLink['slug']}");
+            if (!empty($redirectUrl)) {
+                header("Location: $redirectUrl");
+                exit;
+            } else {
+                header("Location: /link/{$smartLink['slug']}");
+                exit;
+            }
+        } catch (Exception $e) {
+            error_log('Exception tracking platform click: ' . $e->getMessage());
+            // Redirect to home page if there's an error
+            header('Location: /');
             exit;
         }
         break;
@@ -228,29 +277,51 @@ switch (true) {
         switch ($apiPath) {
             case 'extract-metadata':
                 $spotifyUrl = $_POST['spotify_url'] ?? '';
-                $spotifyService = new SpotifyService();
-                $metadata = $spotifyService->extractMetadata($spotifyUrl);
+                try {
+                    $spotifyService = new SpotifyService();
+                    $metadata = $spotifyService->extractMetadata($spotifyUrl);
 
-                echo json_encode([
-                    'success' => (bool) $metadata,
-                    'data' => $metadata,
-                ]);
+                    echo json_encode([
+                        'success' => (bool) $metadata,
+                        'data' => $metadata,
+                    ]);
+                } catch (Exception $e) {
+                    error_log('Exception extracting metadata: ' . $e->getMessage());
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Error extracting metadata. Please try again.',
+                    ]);
+                }
                 break;
                 
             case 'find-matching-links':
                 $spotifyUrl = $_POST['spotify_url'] ?? '';
-                $musicPlatformService = new MusicPlatformService();
-                $result = $musicPlatformService->findMatchingLinks($spotifyUrl);
-
-                echo json_encode($result);
+                try {
+                    $musicPlatformService = new MusicPlatformService();
+                    $result = $musicPlatformService->findMatchingLinks($spotifyUrl);
+                    echo json_encode($result);
+                } catch (Exception $e) {
+                    error_log('Exception finding matching links: ' . $e->getMessage());
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Error finding matching links. Please try again.',
+                    ]);
+                }
                 break;
 
             case 'verify-email':
                 $email = $_POST['email'] ?? '';
-                $emailVerifier = new EmailVerificationService();
-                $result = $emailVerifier->verifyEmail($email);
-
-                echo json_encode($result);
+                try {
+                    $emailVerifier = new EmailVerificationService();
+                    $result = $emailVerifier->verifyEmail($email);
+                    echo json_encode($result);
+                } catch (Exception $e) {
+                    error_log('Exception verifying email: ' . $e->getMessage());
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Error verifying email. Please try again.',
+                    ]);
+                }
                 break;
 
             case 'smart-links':
@@ -262,10 +333,17 @@ switch (true) {
                     break;
                 }
 
-                $smartLinkController = new SmartLinkController();
-                $result = $smartLinkController->getUserSmartLinks();
-
-                echo json_encode($result);
+                try {
+                    $smartLinkController = new SmartLinkController();
+                    $result = $smartLinkController->getUserSmartLinks();
+                    echo json_encode($result);
+                } catch (Exception $e) {
+                    error_log('Exception getting smart links: ' . $e->getMessage());
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Error retrieving smart links. Please try again.',
+                    ]);
+                }
                 break;
 
             case 'delete-smart-link':
@@ -278,10 +356,17 @@ switch (true) {
                 }
 
                 $id = $_POST['id'] ?? 0;
-                $smartLinkController = new SmartLinkController();
-                $result = $smartLinkController->deleteSmartLink($id);
-
-                echo json_encode($result);
+                try {
+                    $smartLinkController = new SmartLinkController();
+                    $result = $smartLinkController->deleteSmartLink($id);
+                    echo json_encode($result);
+                } catch (Exception $e) {
+                    error_log('Exception deleting smart link: ' . $e->getMessage());
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Error deleting smart link. Please try again.',
+                    ]);
+                }
                 break;
 
             default:
